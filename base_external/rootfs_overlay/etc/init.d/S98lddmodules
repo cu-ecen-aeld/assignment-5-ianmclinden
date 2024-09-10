@@ -1,0 +1,88 @@
+#!/bin/sh
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+NAME=lddmodules
+
+case "$1" in
+	start)
+		# ==== scull ====
+		modprobe scull || exit 1
+		major=$(awk "\$2==\"scull\" {print \$1}" /proc/devices)
+
+		rm -f /dev/scull[0-3]
+		mknod /dev/scull0 c "${major}" 0
+		mknod /dev/scull1 c "${major}" 1
+		mknod /dev/scull2 c "${major}" 2
+		mknod /dev/scull3 c "${major}" 3
+		ln -sf scull0 /dev/scull
+		chgrp wheel /dev/scull[0-3] 
+		chmod 664 /dev/scull[0-3]
+
+		rm -f /dev/scullpipe[0-3]
+		mknod /dev/scullpipe0 c "${major}" 4
+		mknod /dev/scullpipe1 c "${major}" 5
+		mknod /dev/scullpipe2 c "${major}" 6
+		mknod /dev/scullpipe3 c "${major}" 7
+		ln -sf scullpipe0 /dev/scullpipe
+		chgrp wheel /dev/scullpipe[0-3] 
+		chmod 664 /dev/scullpipe[0-3]
+
+		rm -f /dev/scullsingle
+		mknod /dev/scullsingle  c "${major}" 8
+		chgrp wheel /dev/scullsingle
+		chmod 664 /dev/scullsingle
+
+		rm -f /dev/sculluid
+		mknod /dev/sculluid   c "${major}" 9
+		chgrp wheel /dev/sculluid
+		chmod 664 /dev/sculluid
+
+		rm -f /dev/scullwuid
+		mknod /dev/scullwuid  c "${major}" 10
+		chgrp wheel /dev/scullwuid
+		chmod 664 /dev/scullwuid
+
+		rm -f /dev/scullpriv
+		mknod /dev/scullpriv  c "${major}" 11
+		chgrp wheel /dev/scullpriv
+		chmod 664 /dev/scullpriv
+
+		# ==== faulty ====
+		modprobe faulty || exit 1
+		major=$(awk "\$2==\"faulty\" {print \$1}" /proc/devices)
+		if [ -n "${major}" ]; then
+			rm -f /dev/faulty
+			mknod /dev/faulty c "${major}" 0
+			chgrp wheel /dev/faulty
+			chmod 664 /dev/faulty
+		fi
+
+		# ==== hello ====
+		modprobe hello || exit 1
+
+		exit 0
+		;;
+	stop)
+		# ==== scull ====
+		rmmod scull || true
+		rm -f /dev/scull /dev/scull[0-3] 
+		rm -f /dev/scullpriv
+		rm -f /dev/scullpipe /dev/scullpipe[0-3]
+		rm -f /dev/scullsingle
+		rm -f /dev/sculluid
+		rm -f /dev/scullwuid
+		
+		# ==== faulty ====
+		rmmod faulty || true
+		rm -f /dev/faulty
+
+		# ==== hello ====
+		rmmod hello || true
+
+      exit 0
+		;;
+	*)
+		echo "Usage: $NAME {start|stop}" >&2
+		exit 1
+		;;
+esac
